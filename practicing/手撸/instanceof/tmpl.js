@@ -1,3 +1,3 @@
-function myInstanceof (left, right) {
+function myInstanceof(left, right) {
 
 }

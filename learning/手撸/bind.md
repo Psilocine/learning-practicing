@@ -4,15 +4,15 @@ bind() 方法创建一个新的函数，在 bind() 被调用时，这个新函�
 
 ```javascript
 Function.prototype.myBind2 = function (context, ...args) {
-    const fn = this
-    args = args ? args : []
-    return function newFn(...newFnArgs) {
-        if (this instanceof newFn) {
-            return new fn(...args, ...newFnArgs)
-        }
-        return fn.apply(context, [...args,...newFnArgs])
+  const fn = this;
+  args = args ? args : [];
+  return function newFn(...newFnArgs) {
+    if (this instanceof newFn) {
+      return new fn(...args, ...newFnArgs);
     }
-}
+    return fn.apply(context, [...args, ...newFnArgs]);
+  };
+};
 ```
 
 ## 问题
@@ -23,21 +23,21 @@ Function.prototype.myBind2 = function (context, ...args) {
 var value = 2;
 
 var foo = {
-    value: 1
+  value: 1,
 };
 
 function bar(name, age) {
-    this.habit = 'shopping';
-    console.log(this.value);
-    console.log(name);
-    console.log(age);
+  this.habit = "shopping";
+  console.log(this.value);
+  console.log(name);
+  console.log(age);
 }
 
-bar.prototype.friend = 'kevin';
+bar.prototype.friend = "kevin";
 
-var bindFoo = bar.bind(foo, 'daisy');
+var bindFoo = bar.bind(foo, "daisy");
 
-var obj = new bindFoo('18');
+var obj = new bindFoo("18");
 // undefined -------- 注意这里
 // daisy
 // 18
