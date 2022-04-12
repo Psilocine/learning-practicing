@@ -1,8 +1,8 @@
 
 class MyPromise {
   constructor(executor) {
-    // 初始化 state 为等待态
-    this.state = 'pending';
+    // 初始化 status 为等待态
+    this.status = 'pending';
     // 成功的值
     this.value = undefined;
     // 失败的原因
@@ -15,9 +15,9 @@ class MyPromise {
 
     let resolve = value => {
       // 如果状态已经是成功态，则不再执行
-      if (this.state === 'pending') {
+      if (this.status === 'pending') {
         // resolve 调用用，state 状态改为成功态
-        this.state = 'fulfilled';
+        this.status = 'fulfilled';
         // 储存成功的值
         this.value = value;
         // 一旦resolve执行，调用成功数组的函数
@@ -26,9 +26,9 @@ class MyPromise {
     };
     let reject = reason => {
       // 如果状态已经是失败态，则不再执行
-      if (this.state === 'pending') {
+      if (this.status === 'pending') {
         // reject 调用用，state 状态改为失败态
-        this.state = 'rejected';
+        this.status = 'rejected';
         // 储存失败的原因
         this.reason = reason;
         // 一旦reject执行，调用失败数组的函数
@@ -52,7 +52,7 @@ class MyPromise {
 
 
     let promise2 = new MyPromise((resolve, reject) => {
-      if (this.state === 'fulfilled') {
+      if (this.status === 'fulfilled') {
         setTimeout(() => {
           try {
             let x = onFulfilled(this.value);
@@ -63,7 +63,7 @@ class MyPromise {
           }
         }, 0);
       }
-      if (this.state === 'rejected') {
+      if (this.status === 'rejected') {
         setTimeout(() => {
           try {
             let x = onRejected(this.reason);
@@ -73,7 +73,7 @@ class MyPromise {
           }
         }, 0)
       }
-      if (this.state === 'pending') {
+      if (this.status === 'pending') {
         // onFulfilled 传入到成功数组
         this.onResloveCallbacks.push(() => {
           setTimeout(() => {

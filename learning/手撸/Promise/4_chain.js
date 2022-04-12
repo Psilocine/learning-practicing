@@ -9,11 +9,9 @@ const REJECTED = 'rejected'
 
 class MyPromise {
   constructor(executor) {
-    this.state = PENDING
+    this.status = PENDING
     this.value = undefined
     this.err = undefined
-    this.onFulfilled = null;
-    this.onRejected = null;
 
     // 支持链式操作，储存回调时要改为使用数组
     this.onFulfilledCallbacks = []
@@ -23,9 +21,9 @@ class MyPromise {
       // 如果当前状态是 pending，才去执行逻辑并改变状态为 fulfilled
       if (this.status === PENDING) {
         setTimeout(() => {
-          this.state = FULFILLED
+          this.status = FULFILLED
           this.value = value;
-          this.onFulfilled(this.value)
+          this.onFulfilledCallbacks.forEach(fn => fn());
         }, 0);
       }
     }
@@ -34,9 +32,9 @@ class MyPromise {
       // 如果当前状态是 pending，才去执行逻辑并改变状态为 rejected
       if (this.status === PENDING) {
         setTimeout(() => {
-          this.state = REJECTED
+          this.status = REJECTED;
           this.err = err;
-          this.onRejected(this.err)
+          this.onRejectedCallbacks.forEach((fn) => fn());
         }, 0);
       }
     }
@@ -49,15 +47,15 @@ class MyPromise {
   }
 
   then(onFulfilled, onRejected) {
-    if (this.state === PENDING) {
+    if (this.status === PENDING) {
       this.onFulfilledCallbacks.push(onFulfilled)
       this.onRejectedCallbacks.push(onRejected)
       // this.onFulfilled = onFulfilled
       // this.onRejected = onRejected
-    } else if (this.state === FULFILLED) {
+    } else if (this.status === FULFILLED) {
       // 如果状态是 fulfilled，立即执行 onFulfilled 回调
       onFulfilled(this.value)
-    } else if (this.state === REJECTED) {
+    } else if (this.status === REJECTED) {
       // 如果状态是 rejected，立即执行 onRejected 回调
       onRejected(this.err)
     }

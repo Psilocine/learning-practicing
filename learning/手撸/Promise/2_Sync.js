@@ -5,7 +5,7 @@
 
 class MyPromise {
   constructor(executor) {
-    this.state = 'pending'
+    this.status = 'pending'
     this.value = undefined
     this.err = undefined
     this.onFulfilled = null;

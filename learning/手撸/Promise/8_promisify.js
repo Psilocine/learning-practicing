@@ -1,38 +1,45 @@
-
 /**
  * 目标：
- * 1. 实现 Promise 的 all，race，resolve，reject 方法
+ * 1. 实现 bluebird 库的 promisify，promisify 有什么作用呢？它的作用就是将异步回调函数 api 转换为 promise 形式，
+ * 比如下面这个，对 fs.readFile 执行 promisify 后，就可以直接用 promise 的方式去调用读取文件的方法了，是不是很强大。
+ * let Promise = require('./bluebird');
+ * let fs = require("fs");
+ *
+ *  var readFile = Promise.promisify(fs.readFile);
+ *  readFile("1.txt", "utf8").then(function(data) {
+ *    console.log(data);
+ *  })
  */
 
-const PENDING = 'pending'
-const FULFILLED = 'fulfilled'
-const REJECTED = 'rejected'
+const PENDING = "pending";
+const FULFILLED = "fulfilled";
+const REJECTED = "rejected";
 
 class MyPromise {
   constructor(executor) {
-    this.status = PENDING
-    this.value = undefined
-    this.err = undefined
+    this.status = PENDING;
+    this.value = undefined;
+    this.err = undefined;
 
     // 支持链式操作，储存回调时要改为使用数组
-    this.onFulfilledCallbacks = []
-    this.onRejectedCallbacks = []
+    this.onFulfilledCallbacks = [];
+    this.onRejectedCallbacks = [];
 
-    let resolve = value => {
+    let resolve = (value) => {
       if (value instanceof MyPromise) {
         return value.then(resolve, reject);
       }
       // 如果当前状态是 pending，才去执行逻辑并改变状态为 fulfilled
       if (this.status === PENDING) {
         setTimeout(() => {
-          this.status = FULFILLED
+          this.status = FULFILLED;
           this.value = value;
-          this.onFulfilledCallbacks.forEach(fn => fn());
+          this.onFulfilledCallbacks.forEach((fn) => fn());
         }, 0);
       }
-    }
+    };
 
-    let reject = err => {
+    let reject = (err) => {
       // 如果当前状态是 pending，才去执行逻辑并改变状态为 rejected
       if (this.status === PENDING) {
         setTimeout(() => {
@@ -41,20 +48,26 @@ class MyPromise {
           this.onRejectedCallbacks.forEach((fn) => fn());
         }, 0);
       }
-    }
+    };
 
     try {
-      executor(resolve, reject)
+      executor(resolve, reject);
     } catch (e) {
-      reject(e)
+      reject(e);
     }
   }
 
   then(onFulfilled, onRejected) {
     // onFulfilled 如果不是函数，就忽略 onFulfilled
-    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value => value;
+    onFulfilled =
+      typeof onFulfilled === "function" ? onFulfilled : (value) => value;
     // onRejected 如果不是函数，就忽略 onRejected
-    onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason };
+    onRejected =
+      typeof onRejected === "function"
+        ? onRejected
+        : (reason) => {
+            throw reason;
+          };
 
     let promise2 = new MyPromise((resolve, reject) => {
       if (this.status === PENDING) {
@@ -107,70 +120,109 @@ class MyPromise {
 
   // 语法糖，只传 onRejected 的 then 方法
   catch(onRejected) {
-    return this.then(null, onRejected)
+    return this.then(null, onRejected);
   }
 
   all(promises) {
     return new MyPromise((resolve, reject) => {
-      let result = []
-      let count = 0
-      if (promises.length === 0) {
-        resolve(result)
-      }
-      promises.forEach((promise, index) => {
-        promise.then(value => {
-          result[index] = value
-          count++
-          if (count === promises.length) {
-            resolve(result)
-          }
-        }, reason => {
-          reject(reason)
-        })
-      })
-    })
-  }
-
-  any(promises) {
-    return new MyPromise((resolve, reject) => {
-      let errs = [];
+      let result = [];
       let count = 0;
       if (promises.length === 0) {
-        reject(new AggregateError('All promises were rejected'))
+        resolve(result);
       }
-
       promises.forEach((promise, index) => {
-        promise.then(valeu => {
-          resolve(value)
-        }, err => {
-          count++;
-          errs.push(err)
-          if (count === promises.length) {
-            reject(new AggregateError(errs))
+        promise.then(
+          (value) => {
+            result[index] = value;
+            count++;
+            if (count === promises.length) {
+              resolve(result);
+            }
+          },
+          (reason) => {
+            reject(reason);
           }
-        })
-      })
-    })
+        );
+      });
+    });
   }
 
   race(promises) {
     return new MyPromise((resolve, reject) => {
       for (let i = 0; i < promises.length; i++) {
-        promises[i].then(resolve, reject)
+        promises[i].then(resolve, reject);
       }
-    })
+    });
   }
 
   resolve(value) {
     return new MyPromise((resolve) => {
-      resolve(value)
-    })
+      resolve(value);
+    });
   }
 
   reject(err) {
     return new MyPromise((resolve, reject) => {
-      reject(err)
-    })
+      reject(err);
+    });
+  }
+
+  all(promises) {
+    return new MyPromise((resolve, reject) => {
+      let result = [];
+      let count = 0;
+      if (promises.length === 0) {
+        resolve(result);
+      }
+      promises.forEach((promise, index) => {
+        promise.then(
+          (value) => {
+            result[index] = value;
+            count++;
+            if (count === promises.length) {
+              resolve(result);
+            }
+          },
+          (reason) => {
+            reject(reason);
+          }
+        );
+      });
+    });
+  }
+
+  race(promises) {
+    return new MyPromise((resolve, reject) => {
+      for (let i = 0; i < promises.length; i++) {
+        promises[i].then(resolve, reject);
+      }
+    });
+  }
+
+  resolve(value) {
+    return new MyPromise((resolve) => {
+      resolve(value);
+    });
+  }
+
+  reject(err) {
+    return new MyPromise((resolve, reject) => {
+      reject(err);
+    });
+  }
+
+  promisify(fn) {
+    return function (...args) {
+      return new MyPromise(function (resolve, reject) {
+        args.push(function (err, ...arg) {
+          if (err) {
+            reject(err);
+          }
+          resolve(...arg);
+        });
+        fn.apply(null, args);
+      });
+    };
   }
 }
 
@@ -178,30 +230,34 @@ function resolvePromise(promise2, x, resolve, reject) {
   // 循环引用报错
   if (x === promise2) {
     // reject 报错
-    return reject(new TypeError('循环引用'));
+    return reject(new TypeError("循环引用"));
   }
   // 防止多次调用
   let called;
   // x 不是 null 且 x 是对象或者函数
-  if (x !== null && (typeof x === 'object' || typeof x === 'function')) {
+  if (x !== null && (typeof x === "object" || typeof x === "function")) {
     try {
       // 尝试调用 x 的 then 方法
       let then = x.then;
       // 如果 x.then 是函数，则调用 x.then
-      if (typeof then === 'function') {
+      if (typeof then === "function") {
         // 如果 then 方法返回的是一个 promise，则等待 promise 的状态
-        then.call(x, y => {
-          // 成功和失败只能调用一个
-          if (called) return;
-          called = true;
-          // resolve 结果依旧是 promise 那就继续解析
-          resolvePromise(promise2, y, resolve, reject);
-        }, err => {
-          // 成功和失败只能调用一个
-          if (called) return;
-          called = true;
-          reject(err);
-        })
+        then.call(
+          x,
+          (y) => {
+            // 成功和失败只能调用一个
+            if (called) return;
+            called = true;
+            // resolve 结果依旧是 promise 那就继续解析
+            resolvePromise(promise2, y, resolve, reject);
+          },
+          (err) => {
+            // 成功和失败只能调用一个
+            if (called) return;
+            called = true;
+            reject(err);
+          }
+        );
       } else {
         resolve(x);
       }
@@ -225,6 +281,6 @@ MyPromise.deferred = MyPromise.defer = function () {
     dfd.reject = reject;
   });
   return dfd;
-}
+};
 
-module.exports = MyPromise
+module.exports = MyPromise;

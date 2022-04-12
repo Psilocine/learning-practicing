@@ -1,7 +1,11 @@
-/**
- * 目标：
- * 1. 实现 Promise 达到 Promises/A+ 规范，使用 promises-aplus-tests 包通过测试
- */
+// 1. base
+// 2. sync
+// 3. status
+// 4. chain
+// 5. async
+// 6. A+
+// 7. otherFuns
+// 8. promisify
 
 const PENDING = "pending";
 const FULFILLED = "fulfilled";
@@ -13,12 +17,10 @@ class MyPromise {
     this.value = undefined;
     this.err = undefined;
 
-    // 支持链式操作，储存回调时要改为使用数组
     this.onFulfilledCallbacks = [];
     this.onRejectedCallbacks = [];
 
     let resolve = (value) => {
-      // 如果当前状态是 pending，才去执行逻辑并改变状态为 fulfilled
       if (this.status === PENDING) {
         setTimeout(() => {
           this.status = FULFILLED;
@@ -29,7 +31,6 @@ class MyPromise {
     };
 
     let reject = (err) => {
-      // 如果当前状态是 pending，才去执行逻辑并改变状态为 rejected
       if (this.status === PENDING) {
         setTimeout(() => {
           this.status = REJECTED;
@@ -41,16 +42,14 @@ class MyPromise {
 
     try {
       executor(resolve, reject);
-    } catch (e) {
-      reject(e);
+    } catch (error) {
+      reject(error);
     }
   }
 
   then(onFulfilled, onRejected) {
-    // onFulfilled 如果不是函数，就忽略 onFulfilled
     onFulfilled =
       typeof onFulfilled === "function" ? onFulfilled : (value) => value;
-    // onRejected 如果不是函数，就忽略 onRejected
     onRejected =
       typeof onRejected === "function"
         ? onRejected
@@ -58,27 +57,25 @@ class MyPromise {
             throw err;
           };
 
-    let promise2 = new MyPromise((resolve, reject) => {
+    const promise2 = new MyPromise((resolve, reject) => {
       if (this.status === PENDING) {
-        // onFulfilled 传入到成功数组
         this.onFulfilledCallbacks.push(() => {
           setTimeout(() => {
             try {
               let x = onFulfilled(this.value);
               resolvePromise(promise2, x, resolve, reject);
-            } catch (error) {
-              reject(error);
+            } catch (e) {
+              reject(e);
             }
           }, 0);
         });
-        // onRejected 传入到失败数组
         this.onRejectedCallbacks.push(() => {
           setTimeout(() => {
             try {
               let x = onRejected(this.err);
               resolvePromise(promise2, x, resolve, reject);
-            } catch (error) {
-              reject(error);
+            } catch (e) {
+              reject(e);
             }
           }, 0);
         });
@@ -86,10 +83,9 @@ class MyPromise {
         setTimeout(() => {
           try {
             let x = onFulfilled(this.value);
-            // resolvePromise 函数，处理自己 return 的 promise 和默认的 promise2 的关系
             resolvePromise(promise2, x, resolve, reject);
-          } catch (error) {
-            reject(error);
+          } catch (e) {
+            reject(e);
           }
         }, 0);
       } else if (this.status === REJECTED) {
@@ -97,8 +93,8 @@ class MyPromise {
           try {
             let x = onRejected(this.err);
             resolvePromise(promise2, x, resolve, reject);
-          } catch (error) {
-            reject(error);
+          } catch (e) {
+            reject(e);
           }
         }, 0);
       }
@@ -107,9 +103,67 @@ class MyPromise {
     return promise2;
   }
 
-  // 语法糖，只传 onRejected 的 then 方法
   catch(onRejected) {
-    return this.then(null, onRejected);
+    this.then(null, onRejected);
+  }
+
+  all(promises) {
+    return new MyPromise((resolve, reject) => {
+      let result = [];
+      let count = 0;
+      if (promises.length === 0) {
+        resolve(result);
+      }
+      promises.forEach((promise, index) => {
+        promise.then(
+          (value) => {
+            result[index] = value;
+            count++;
+            if (count === promises.length) {
+              resolve(result);
+            }
+          },
+          (err) => {
+            reject(err);
+          }
+        );
+      });
+    });
+  }
+
+  race(promises) {
+    return new MyPromise((resolve, reject) => {
+      for (let i = 0; i < promises.length; i++) {
+        promises[i].then(resolve, reject);
+      }
+    });
+  }
+
+  resolve(value) {
+    return new MyPromise((resolve) => {
+      resolve(value);
+    });
+  }
+
+  reject(err) {
+    return new MyPromise((resolve, reject) => {
+      reject(err);
+    });
+  }
+
+  promisify(fn) {
+    return function (...args) {
+      return new MyPromise((resolve, reject) => {
+        args.push(function (err, ...arg) {
+          if (err) {
+            reject(err);
+          }
+          resolve(...arg);
+        });
+
+        fn.apply(null, args);
+      });
+    };
   }
 }
 
@@ -119,32 +173,35 @@ function resolvePromise(promise, x, resolve, reject) {
   }
   // 防止多次调用
   let called;
-  if (x !== null & (typeof x === 'object' || typeof x === 'function')) {
-
+  if ((x !== null) & (typeof x === "object" || typeof x === "function")) {
     try {
-      let then = x.then
-      if (typeof then === 'function') {
-        then.call(x, y => {
-          if (called) {
-            return;
-          }
-          called = true;
+      let then = x.then;
+      if (typeof then === "function") {
+        then.call(
+          x,
+          (y) => {
+            if (called) {
+              return;
+            }
+            called = true;
 
-          resolvePromise(promise, y, resolve, reject)
-        }, err => {
-          if (called) {
-            return;
+            resolvePromise(promise, y, resolve, reject);
+          },
+          (err) => {
+            if (called) {
+              return;
+            }
+            called = true;
+            reject(err);
           }
-          called = true;
-          reject(err)
-        })
+        );
       } else {
-        resolve(x)
+        resolve(x);
       }
     } catch (e) {
       if (called) return;
       called = true;
-      reject(e)
+      reject(e);
     }
   } else {
     resolve(x);
@@ -159,6 +216,6 @@ MyPromise.deferred = MyPromise.defer = function () {
     dfd.reject = reject;
   });
   return dfd;
-}
+};
 
-module.exports = MyPromise
+module.exports = MyPromise;
