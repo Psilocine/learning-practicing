@@ -140,7 +140,7 @@ class MyPromise {
       }
 
       promises.forEach((promise, index) => {
-        promise.then(valeu => {
+        promise.then(value => {
           resolve(value)
         }, err => {
           count++;

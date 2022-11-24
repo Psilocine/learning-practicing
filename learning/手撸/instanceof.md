@@ -32,7 +32,7 @@ Foo instanceof Function; // true
 
 ![prototype](./instanceof/prototype.png)
 
-我们知道每个 JS 对象均有一个隐式的 `__proto__` 原型属性，而显示的原型属于是 `prototype`，只有 `Object.protoype.__proto__` 属性在未修改的情况下位 `null`。
+我们知道每个 JS 对象均有一个隐式的 `__proto__` 原型属性，而显示的原型属于是 `prototype`，只有 `Object.prototype.__proto__` 属性在未修改的情况下位 `null`。
 
 根据上图的原理，我们来梳理几个有趣的 `instanceof` 例子
 
@@ -77,7 +77,7 @@ function instance_of(left, right) {
   let prototype = right.prototype;
   while (proto) {
     if (proto === prototype) return true;
-    proto = object.getPrototypePf(proto);
+    proto = object.getPrototypeOf(proto);
   }
   return false;
 }
